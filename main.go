@@ -22,6 +22,7 @@ func main() {
   // ONLY TAKES PNG, I am too lazy to do jpeg as well
   var img [][]Pixel
   var num int
+  width := 2
   switch len(os.Args) {
   case 2:
     img = imgToPixelArr(getAndProcessImage(os.Args[1]))
@@ -32,8 +33,13 @@ func main() {
     num, _ = strconv.Atoi(os.Args[2])
     num2, _ := strconv.Atoi(os.Args[3])
     img = imgToPixelArr(resize.Resize(uint(num), uint(num2), getAndProcessImage(os.Args[1]), resize.Lanczos3))
+  case 5: 
+    num, _ = strconv.Atoi(os.Args[2])
+    num2, _ := strconv.Atoi(os.Args[3])
+    img = imgToPixelArr(resize.Resize(uint(num), uint(num2), getAndProcessImage(os.Args[1]), resize.Lanczos3))
+    width = strconv.Atoi(os.Args[4])
   default:
-    fmt.Println("Invalid number of arguments, all arguments after 1 are optional\n usage: imageToSpreadsheet localPathToImage<only takes png>` width<optional, preserves aspect ratio> height<optional, does not preserve aspect ratio")
+    fmt.Println("Invalid number of arguments, all arguments after 1 are optional\n usage: imageToSpreadsheet localPathToImage<only takes png>` width<optional, preserves aspect ratio> height<optional, does not preserve aspect ratio> widthOfCell<optional>")
     return
   }
   
@@ -57,12 +63,12 @@ func createExcelSheet(img [][]Pixel, sheetName string, file *xlsx.File) {
     return
   }
   
-  sheet.SetColWidth(0, len(img[0]), 2.0 * 0.5)
+  sheet.SetColWidth(0, len(img[0]), width)
 
   
   for y := 0; y < len(img); y++ {
     row := sheet.AddRow()
-    row.SetHeight(14.0 * 0.5)
+    row.SetHeight(7 * width)
     for x := 0; x < len(img[y]); x++ {
       cell := row.AddCell()
       style := xlsx.NewStyle()
