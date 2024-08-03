@@ -1,5 +1,7 @@
-#imageToSpreadsheet
+---
 
-Converts an image(png, webp, jpeg, gif, bmp, tiff) to an xlsx spreadsheet at output.xlsx
-Little side project, if you open an issue I may or may not solve it, PRs welcome
+# imageToSpreadsheet
 
+Converts images (PNG, WEBP, JPEG, GIF, BMP, TIFF) to an XLSX spreadsheet (`output.xlsx`). A small side project; issues and PRs are welcome but may not be addressed.
+
+---
