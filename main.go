@@ -28,16 +28,17 @@ func main() {
   // start := time.Now()
   img, width := processArgs(os.Args)
   file := xlsx.NewFile()
-
-  createExcelSheet(img, "image", width, file)
-  
+  fillExcelSheet(img, "image", width, file)
+  // fmt.Println("Time taken to compute ", time.Since(start))
+  fmt.Println("Computed successfully")
   err := file.Save("output.xlsx")
   
   if err != nil {
-    fmt.Println(err)
+    fmt.Println("Error writing file", err)
   }
-  fmt.Println("Written successfully")
-  // fmt.Println("Time taken ", time.Since(start))
+
+  fmt.Println("Written successfully.")
+  // fmt.Println("Time taken in total ", time.Since(start))
 }
 
 func processArgs(args []string) ([][]Pixel, float64) {
@@ -67,7 +68,7 @@ func processArgs(args []string) ([][]Pixel, float64) {
 
 }
 
-func createExcelSheet(img [][]Pixel, sheetName string, width float64, file *xlsx.File) {
+func fillExcelSheet(img [][]Pixel, sheetName string, width float64, file *xlsx.File) {
   sheet, err := file.AddSheet(sheetName)
   
   if err != nil {
@@ -80,12 +81,15 @@ func createExcelSheet(img [][]Pixel, sheetName string, width float64, file *xlsx
   
   for y := 0; y < len(img); y++ {
     row := sheet.AddRow()
-    row.SetHeight(7 * width)
-    for x := 0; x < len(img[y]); x++ {
-      fillCell(x, y, img, row.AddCell())
-    }
+    go fillRow(y, width, img, row)
   }
+}
 
+func fillRow(y int, width float64, img [][]Pixel, row *xlsx.Row) {
+  row.SetHeight(7 * width)
+  for x := 0; x < len(img[y]); x++ {
+    fillCell(x, y, img, row.AddCell())
+  }
 }
 
 func fillCell(x, y int, img [][]Pixel, cell *xlsx.Cell) {
