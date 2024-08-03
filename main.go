@@ -5,8 +5,14 @@ import (
   "os"
   "strconv"
   "image"
-  "image/png"
+  // "time"
+  _ "image/png"
+  _ "image/jpeg"
+  _ "image/gif"
   "image/color"
+  "golang.org/x/image/bmp"
+  "golang.org/x/image/tiff"
+  "golang.org/x/image/webp"
   "github.com/tealeg/xlsx"
   "github.com/nfnt/resize"
 )
@@ -19,11 +25,25 @@ type Pixel struct {
 }
 
 func main() {
-  // ONLY TAKES PNG, I am too lazy to do jpeg as well
-  var img [][]Pixel
+  // start := time.Now()
+  img, width := processArgs(os.Args)
+  file := xlsx.NewFile()
+
+  createExcelSheet(img, "image", width, file)
+  
+  err := file.Save("output.xlsx")
+  
+  if err != nil {
+    fmt.Println(err)
+  }
+  // fmt.Println("Time taken ", time.Since(start))
+}
+
+func processArgs(args []string) ([][]Pixel, float64) {
   var num int
-  width := 2
-  switch len(os.Args) {
+  width := 2.0
+  var img [][]Pixel
+  switch len(args) {
   case 2:
     img = imgToPixelArr(getAndProcessImage(os.Args[1]))
   case 3: 
@@ -37,25 +57,16 @@ func main() {
     num, _ = strconv.Atoi(os.Args[2])
     num2, _ := strconv.Atoi(os.Args[3])
     img = imgToPixelArr(resize.Resize(uint(num), uint(num2), getAndProcessImage(os.Args[1]), resize.Lanczos3))
-    width = strconv.Atoi(os.Args[4])
+    width, _ = strconv.ParseFloat(os.Args[4], 64)
   default:
     fmt.Println("Invalid number of arguments, all arguments after 1 are optional\n usage: imageToSpreadsheet localPathToImage<only takes png>` width<optional, preserves aspect ratio> height<optional, does not preserve aspect ratio> widthOfCell<optional>")
-    return
+    os.Exit(128)
   }
-  
-  file := xlsx.NewFile()
+  return img, width
 
-  createExcelSheet(img, "image", file)
-  
-  err := file.Save("output.xlsx")
-  
-  if err != nil {
-    fmt.Println(err)
-  }
-  // fmt.Println(img)
 }
 
-func createExcelSheet(img [][]Pixel, sheetName string, file *xlsx.File) {
+func createExcelSheet(img [][]Pixel, sheetName string, width float64, file *xlsx.File) {
   sheet, err := file.AddSheet(sheetName)
   
   if err != nil {
@@ -70,14 +81,18 @@ func createExcelSheet(img [][]Pixel, sheetName string, file *xlsx.File) {
     row := sheet.AddRow()
     row.SetHeight(7 * width)
     for x := 0; x < len(img[y]); x++ {
-      cell := row.AddCell()
-      style := xlsx.NewStyle()
-      // fmt.Println("Filling (", x, y, ") with ", pixelToHex(img[y][x]))
-      style.Fill = *xlsx.NewFill("solid", pixelToHex(img[y][x]), pixelToHex(img[y][x]))
-      style.ApplyFill = true
-      cell.SetStyle(style)
+      fillCell(x, y, img, row.AddCell())
     }
   }
+
+}
+
+func fillCell(x, y int, img [][]Pixel, cell *xlsx.Cell) {
+  style := xlsx.NewStyle()
+  // fmt.Println("Filling (", x, y, ") with ", pixelToHex(img[y][x]))
+  style.Fill = *xlsx.NewFill("solid", pixelToHex(img[y][x]), pixelToHex(img[y][x]))
+  style.ApplyFill = true
+  cell.SetStyle(style)
 
 }
 
@@ -112,15 +127,33 @@ func getAndProcessImage(path string) image.Image {
   
   defer imgFile.Close()
   
-  img, err := png.Decode(imgFile)
+  img, _, err := image.Decode(imgFile)
   
-  if err != nil {
-    fmt.Println(err)
-    fmt.Println("error decoding")
-    os.Exit(1)
+  if err == nil {
+    return img
   }
   
-  return img
+  img, err = webp.Decode(imgFile)
+  
+  if err == nil {
+    return img
+  }
+
+  img, err = bmp.Decode(imgFile)
+
+  if err == nil {
+    return img
+  }
+
+  img, err = tiff.Decode(imgFile)
+
+  if err == nil {
+    return img
+  }
+  
+  fmt.Println("Error decoding image, unsupported format?")
+  os.Exit(1)
+  return nil
 }
 
 func PixelToPixel(pixel color.Color) Pixel {
