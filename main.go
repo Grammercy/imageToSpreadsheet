@@ -36,6 +36,7 @@ func main() {
   if err != nil {
     fmt.Println(err)
   }
+  fmt.Println("Written successfully")
   // fmt.Println("Time taken ", time.Since(start))
 }
 
